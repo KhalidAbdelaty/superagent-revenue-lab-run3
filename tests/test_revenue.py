@@ -52,3 +52,16 @@ def test_interleaved_replay_is_counted_once():
     ])
     report = daily_revenue(events)
     assert report["revenue_cents"].tolist() == [4000]
+
+
+def test_identical_payments_with_distinct_event_ids_are_both_counted():
+    # A customer can pay twice on one order with the same occurred_at and
+    # amount_cents; different event_ids are different payments, so both count.
+    # A replay of one of them must still be counted once.
+    events = frame([
+        ("evt_pay_1", "ord_12", "2026-10-30T11:00:00Z", "2026-10-30T11:00:01Z", 1500),
+        ("evt_pay_2", "ord_12", "2026-10-30T11:00:00Z", "2026-10-30T11:00:02Z", 1500),
+        ("evt_pay_1", "ord_12", "2026-10-30T11:00:00Z", "2026-10-30T11:05:00Z", 1500),
+    ])
+    report = daily_revenue(events)
+    assert report["revenue_cents"].tolist() == [3000]
