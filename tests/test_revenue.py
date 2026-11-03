@@ -39,3 +39,16 @@ def test_replayed_event_is_counted_once():
     ])
     report = daily_revenue(events)
     assert report["revenue_cents"].tolist() == [4000]
+
+
+def test_interleaved_replay_is_counted_once():
+    # A redelivery can arrive later, after unrelated events and more than once;
+    # every delivery of the same event_id must still count toward the day once.
+    events = frame([
+        ("evt_x", "ord_10", "2026-10-30T09:00:00Z", "2026-10-30T09:00:01Z", 3000),
+        ("evt_y", "ord_11", "2026-10-30T09:05:00Z", "2026-10-30T09:05:01Z", 1000),
+        ("evt_x", "ord_10", "2026-10-30T09:00:00Z", "2026-10-30T09:20:00Z", 3000),
+        ("evt_x", "ord_10", "2026-10-30T09:00:00Z", "2026-10-30T09:40:00Z", 3000),
+    ])
+    report = daily_revenue(events)
+    assert report["revenue_cents"].tolist() == [4000]
